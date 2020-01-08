@@ -18,6 +18,8 @@ gaussian <- function(x, y, sigma){
   return(exp(-(norme(x-y)**2)/2*sigma**2))
 }
 
+pause <- function(){readline("Press <ENTER> to Continue.")} 
+
 my_kmeans <- function(X, k, niter = 20) {
   #if(missing(k)){stop("argument 'centers' must be a number")}
   
@@ -71,7 +73,7 @@ M_X <- as.matrix(df)
 M_X <- M_X[1:6,]
 M_X
 S <- matrix(ncol = nrow(M_X), nrow = nrow(M_X))
-sigma = 1
+sigma = 1/8
 deg = 2
 knn <- 3
 
@@ -81,13 +83,13 @@ for(i in 1:nrow(M_X)) {
     # linear
     #if(i>j){S[i, j] <- ifelse(M_X[i,]%*%M_X[j,]>=0,M_X[i,]%*%M_X[j,],0)}
     # gaussian
-    #if(i!=j){S[i, j] <- exp(-norme(M_X[i,]-M_X[j,])**2/2*sigma**2)}
+    #if(i!=j){S[i, j] <- exp(-norme(M_X[i,]-M_X[j,])**2/(2*sigma**2))}
     # polynomial
-    if(i>j){S[i, j] <- (M_X[i,]%*%M_X[j,]+1)**deg
-    S[j, i] <- S[i, j]
-    }
+    #if(i>j){S[i, j] <- (M_X[i,]%*%M_X[j,]+1)**deg
+    #S[j, i] <- S[i, j]
+    #}
     # gaussian via function
-    #if(i!=j){S[i, j] <- gaussian(M_X[i,], M_X[j,], sigma)}
+    if(i!=j){S[i, j] <- gaussian(M_X[i,], M_X[j,], sigma)}
     #print(which(S[j,] %in% sort(S[j,], decreasing = TRUE)[1:knn]))
   }
 }
@@ -95,24 +97,21 @@ for(i in 1:nrow(M_X)) {
 diag(S) <- 0
 S
 
+W <- matrix(nrow=nrow(M_X), ncol = nrow(M_X))
+
 for(i in 1:nrow(M_X)) {
   for(j in 1:nrow(M_X)) {
-    cat("i", i ,"", "j", j, "")
-    print(which(S[j,] %in% sort(S[j,], decreasing = TRUE)[1:knn]))
-    
+    if(i==j){W[i, j]<-0}
+    else if(
+      !j%in%which(S[i,] %in% sort(S[i,], decreasing = TRUE)[1:knn]) &
+      !i%in%which(S[j,] %in% sort(S[j,], decreasing = TRUE)[1:knn])
+    ) {W[i, j]<-0}
+    else {W[i, j] <- S[i, j]}
+    #print(W)
+    #pause()
   }
 }
 
-if(
-      i%in%which(S[j,] %in% sort(S[j,], decreasing = TRUE)[1:knn]) |
-      j%in%which(S[i,] %in% sort(S[i,], decreasing = TRUE)[1:knn])
-    ) {S[i, j]<-0}
-S
-diag(S) <- 0
-S_test <- S[1:6, 1:6]
-S_test
+W_1 <- W
 
-
-
-which(S_test[1,] %in% sort(S_test[1,], decreasing = TRUE)[1:knn])
 
