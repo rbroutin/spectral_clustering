@@ -97,7 +97,7 @@ S
 
 for(i in 1:nrow(M_X)) {
   for(j in 1:nrow(M_X)) {
-    cat("i", i)
+    cat("i", i ,"", "j", j, "")
     print(which(S[j,] %in% sort(S[j,], decreasing = TRUE)[1:knn]))
     
   }
