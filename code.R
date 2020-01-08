@@ -77,12 +77,15 @@ knn <- 3
 
 for(i in 1:nrow(M_X)) {
   for(j in 1:nrow(M_X)) {
+    
     # linear
-    #if(i!=j){S[i, j] <- ifelse(M_X[i,]%*%M_X[j,]>=0,M_X[i,]%*%M_X[j,],0)}
+    #if(i>j){S[i, j] <- ifelse(M_X[i,]%*%M_X[j,]>=0,M_X[i,]%*%M_X[j,],0)}
     # gaussian
     #if(i!=j){S[i, j] <- exp(-norme(M_X[i,]-M_X[j,])**2/2*sigma**2)}
     # polynomial
-    if(i!=j){S[i, j] <- (M_X[i,]%*%M_X[j,]+1)**deg}
+    if(i>j){S[i, j] <- (M_X[i,]%*%M_X[j,]+1)**deg
+    S[j, i] <- S[i, j]
+    }
     # gaussian via function
     #if(i!=j){S[i, j] <- gaussian(M_X[i,], M_X[j,], sigma)}
     #print(which(S[j,] %in% sort(S[j,], decreasing = TRUE)[1:knn]))
@@ -94,7 +97,7 @@ S
 
 for(i in 1:nrow(M_X)) {
   for(j in 1:nrow(M_X)) {
-    
+    cat("i", i)
     print(which(S[j,] %in% sort(S[j,], decreasing = TRUE)[1:knn]))
     
   }
