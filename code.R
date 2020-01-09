@@ -13,8 +13,6 @@ dist_euclidienne <- function(x, y) {
 pause <- function(){readline("Press <ENTER> to Continue.")} 
 
 my_kmeans <- function(X, k, niter = 20) {
-  #if(missing(k)){stop("argument 'centers' must be a number")}
-  
   # Tirage au hasard des k premiers centres de classe
   i_c <- sample(nrow(df), k)
   
@@ -36,7 +34,6 @@ my_kmeans <- function(X, k, niter = 20) {
     
     # vecteur des classes
     V_c <- apply(M_d, 1, which.min)
-    
     
     # recalculer les centres des classes
     for(i in 1:2){
@@ -115,56 +112,3 @@ my_nngraph <- function(X, similarity = "linear", neighbor = "seuil", sigma = 1/8
 
 my_nngraph(df[1:6,], similarity = "polynomial", neighbor = "knn", deg = 2, k = 4)
 
-
-## brouillon
-M_X <- as.matrix(df)
-M_X <- M_X[1:6,]
-M_X <- as.matrix(my.data)
-S <- matrix(ncol = nrow(M_X), nrow = nrow(M_X))
-sigma = sqrt(1/2)
-deg = 2
-knn <- 3
-M_X
-for(i in 1:nrow(M_X)) {
-  for(j in 1:nrow(M_X)) {
-    
-    # linear
-    #if(i>j){S[i, j] <- ifelse(M_X[i,]%*%M_X[j,]>=0,M_X[i,]%*%M_X[j,],0)}
-    #S[j, i] <- S[i, j]
-    # gaussian
-    if(i!=j){S[i, j] <- exp(-norme(M_X[i,]-M_X[j,]**2)/(2*sigma**2))}
-    S[j, i] <- S[i, j]
-    # polynomial
-    #if(i>j){S[i, j] <- (M_X[i,]%*%M_X[j,]+1)**deg
-    #S[j, i] <- S[i, j]
-    #}
-    # gaussian via function
-    #if(i!=j){S[i, j] <- gaussian(M_X[i,], M_X[j,], sigma)}
-    #print(which(S[j,] %in% sort(S[j,], decreasing = TRUE)[1:knn]))
-  }
-}
-
-S
-
-c(1,2)%*%c(1,2)
-norm(as.matrix(c(1,2)), type="F")
-
-diag(S) <- 0
-S[1:8, 1:8]
-
-W <- matrix(nrow=nrow(M_X), ncol = nrow(M_X))
-
-for(i in 1:nrow(M_X)) {
-  for(j in 1:nrow(M_X)) {
-    if(i==j){W[i, j]<-0}
-    else if(
-      !j%in%which(S[i,] %in% sort(S[i,], decreasing = TRUE)[1:knn]) &
-      !i%in%which(S[j,] %in% sort(S[j,], decreasing = TRUE)[1:knn])
-    ) {W[i, j]<-0}
-    else {W[i, j] <- S[i, j]}
-    #print(W)
-    #pause()
-  }
-}
-
-W_1 <- W
