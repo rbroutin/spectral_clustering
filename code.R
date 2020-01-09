@@ -1,7 +1,9 @@
-# Chargement des donnees et visualisation
+# Chargement des donnees
+
 load("smiley.RData")
 
 # Fonctions
+
 dist_euclidienne <- function(x, y) {
   diff <- sum((x-y)**2)
   d <- sqrt(diff)
@@ -96,7 +98,7 @@ my_nngraph <- function(X, similarity = "linear", neighbor = "seuil", sigma = 1/8
     
     diag(W) <- 0
   }
-  
+
   return(W)
   
 }
@@ -108,7 +110,7 @@ my_spclust <- function(X, similarity = "linear", neighbor = "seuil", sigma = 1/8
   # construction de la matrice des degres
   D_X <- matrix(0, nrow=nrow(W_X), ncol=nrow(W_X))
   diag(D_X) <- colSums(W_X)
-  
+
   # construction de la matrice laplacienne
   L_X <- D_X - W_X
   
@@ -139,7 +141,57 @@ my_spclust <- function(X, similarity = "linear", neighbor = "seuil", sigma = 1/8
   return(partition)
 }
 
+my_ari <- function (P0, P1) {
+  # Matrice de confusion entre donnees observees et predites
+  MC <- table(P0, P1)[apply(table(P0, P1), 1, which.max),]
+  
+  # Calcul des constantes
+  ni <- 0
+  nj <- 0
+  nij <- 0
+  for (i in 1:nrow(MC)) {
+    ni <- ni + sum(choose(sum(MC[i,]),2))
+    nj <- nj + sum(choose(sum(MC[,i]),2))
+    for (j in 1:ncol(MC)) {
+      nij <- nij + sum(choose(MC[i,j],2))
+    }
+  }
+  
+  # Calcul ARI
+  n <- sum(MC)
+  numerateur <- nij - ((ni * nj) / choose(n,2))
+  denominateur <- (0.5 * (ni + nj)) - ((ni * nj) / choose(n,2))
+  ari <- numerateur/denominateur
+  
+  
+  ### apply
+  
+  N_ij <- sum(sapply(MC, choose, 2))
+  N_i <- sum(sapply(apply(MC, 1, sum), choose, 2))
+  N_j <- sum(sapply(apply(MC, 2, sum), choose, 2))
+  N <- sum(MC)
+  
+  ARI <- (N_ij - ((N_i * N_j) / choose(N, 2)))/(0.5 * (N_i + N_j) - (N_i * N_j) / choose(N, 2))
+  # retour du resultat
+  return(list(boucle = ari, apply = ARI))
+}
+
 # Tests
 
-test_sp <- my_spclust(D$x, similarity = "gaussian", neighbor = "connexe", sigma = 1/8, normalized = TRUE)
-plot(dw, col=test_sp)
+plot(D$x)
+test_kmeans <- my_kmeans(D$x, k = 4)
+plot(D$x, col=test_kmeans)
+
+test_sp <- my_spclust(D$x, k = 4, similarity = "gaussian", sigma = 1/8, neighbor = "connexe", normalized = TRUE)
+plot(D$x, col=test_sp)
+
+my_ari(D$classes, test_sp)
+
+# data from mlbench
+
+library(mlbench)
+set.seed(111)
+obj <- mlbench.spirals(100,1,0.025)
+plot(obj$x)
+test_sp_1 <- my_spclust(obj$x, k = 2, similarity = "gaussian", sigma = sqrt(1/2), neighbor = "knn", knn = 2)
+plot(obj$x, col=test_sp_1)
