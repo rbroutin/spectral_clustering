@@ -8,8 +8,6 @@ dist_euclidienne <- function(x, y) {
   return(d)
 }
 
-pause <- function(){readline("Press <ENTER> to Continue.")} 
-
 my_kmeans <- function(X, k, niter = 20) {
   X <- as.matrix(X)
   # Tirage au hasard des k premiers centres de classe
