@@ -1,7 +1,5 @@
 # Chargement des donnees et visualisation
 load("smiley.RData")
-plot(D$x, col=D$classes)
-df <- as.data.frame(D$x)
 
 # Fonctions
 dist_euclidienne <- function(x, y) {
@@ -13,11 +11,12 @@ dist_euclidienne <- function(x, y) {
 pause <- function(){readline("Press <ENTER> to Continue.")} 
 
 my_kmeans <- function(X, k, niter = 20) {
+  X <- as.matrix(X)
   # Tirage au hasard des k premiers centres de classe
-  i_c <- sample(nrow(df), k)
+  i_c <- sample(nrow(X), k)
   
   # premiere matrice des centres de classe
-  M_c <- as.matrix(df[i_c,])
+  M_c <- as.matrix(X[i_c,])
   
   # initialisation de la matrice des distances
   M_d <- matrix(nrow = nrow(X), ncol = k)
@@ -29,29 +28,23 @@ my_kmeans <- function(X, k, niter = 20) {
     
     # boucle sur les centres de classe
     for(i in 1:k) {
-      M_d[,i] <- apply(df, 1, dist_euclidienne, y = M_c[i,]) # calcul la distance de chaque point au centre de classe
+      M_d[,i] <- apply(X, 1, dist_euclidienne, y = M_c[i,]) # calcul la distance de chaque point au centre de classe
     }
     
     # vecteur des classes
     V_c <- apply(M_d, 1, which.min)
     
     # recalculer les centres des classes
-    for(i in 1:2){
-      M_c[,i] = tapply(df[[i]], V_c, mean)
+    for(i in 1:ncol(X)){
+      M_c[,i] = tapply(X[,i], V_c, mean)
     }
     
-    # si les centres sont identiques, alors on stop (et on plot)
-    if(all(M_c_a==M_c)){
-      plot(df, col=V_c)
-      return(V_c)
-    }
-
+    # si les centres sont identiques, alors on stop
+    if(all(M_c_a==M_c)){return(V_c)}
   }
 }
 
-my_kmeans(df, 4)
-
-my_nngraph <- function(X, similarity = "linear", neighbor = "seuil", sigma = 1/8, deg = 3, theta = 0, k = 3) {
+my_nngraph <- function(X, similarity = "linear", neighbor = "seuil", sigma = 1/8, deg = 3, theta = 0, knn = 3) {
   # transformer en matrix pour appliquer le produit matriciel
   M_X <- as.matrix(X)
   
@@ -97,7 +90,7 @@ my_nngraph <- function(X, similarity = "linear", neighbor = "seuil", sigma = 1/8
     
     for(i in 1:nrow(M_X)){
       for(j in i:nrow(M_X)){
-        condition_knn <- (j%in%which(S[i,] %in% sort(S[i,], decreasing = TRUE)[1:k]) | i%in%which(S[j,] %in% sort(S[j,], decreasing = TRUE)[1:k]))
+        condition_knn <- (j%in%which(S[i,] %in% sort(S[i,], decreasing = TRUE)[1:knn]) | i%in%which(S[j,] %in% sort(S[j,], decreasing = TRUE)[1:knn]))
         W[i, j] <- ifelse(condition_knn, S[i, j], 0)
         W[j, i] <- W[i, j]
       }
@@ -110,5 +103,45 @@ my_nngraph <- function(X, similarity = "linear", neighbor = "seuil", sigma = 1/8
   
 }
 
-my_nngraph(df[1:6,], similarity = "polynomial", neighbor = "knn", deg = 2, k = 4)
+my_spclust <- function(X, similarity = "linear", neighbor = "seuil", sigma = 1/8, deg = 3, theta = 0, knn = 3, k = 4, normalized = TRUE){
+  # construction du graphe de voisinnage W_X
+  W_X <- my_nngraph(X, similarity = similarity, neighbor = neighbor, sigma = sigma, deg = deg, theta = theta, knn = knn)
+  
+  # construction de la matrice des degres
+  D_X <- matrix(0, nrow=nrow(W_X), ncol=nrow(W_X))
+  diag(D_X) <- colSums(W_X)
+  
+  # construction de la matrice laplacienne
+  L_X <- D_X - W_X
+  
+  # construction de la matrice laplacienne normalisee
+  if(normalized){
+    diag(D_X) <- diag(D_X)**(-1/2)
+    L_X <- D_X%*%L_X%*%D_X
+  }
+  
+  #return(list(graphe = W_X, laplace = L_X))
+  # extraction des vecteurs propres
+  F_X <- eigen(L_X, TRUE)$vectors[, (nrow(X)-k+1):nrow(X)]
 
+  # normalisation des vecteurs propres
+  if(normalized){
+    for(i in (1:nrow(F_X))){
+      sum_row_i <- sum(F_X[i,])
+      for(j in (1:ncol(F_X))){
+        F_X[i, j] <- F_X[i, j]/sum_row_i
+      }
+    }
+  }
+
+  # application des kmeans
+  partition <- my_kmeans(F_X, k = k)
+
+  # finish
+  return(partition)
+}
+
+# Tests
+
+test_sp <- my_spclust(D$x, similarity = "gaussian", neighbor = "connexe", sigma = 1/8, normalized = TRUE)
+plot(dw, col=test_sp)
