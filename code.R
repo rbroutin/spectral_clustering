@@ -113,3 +113,5 @@ S_test
 
 which(S_test[1,] %in% sort(S_test[1,], decreasing = TRUE)[1:knn])
 
+
+
