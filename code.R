@@ -12,11 +12,18 @@ dist_euclidienne <- function(x, y) {
 
 my_kmeans <- function(X, k, niter = 20) {
   X <- as.matrix(X)
+  
+  plot(X)
+  
   # Tirage au hasard des k premiers centres de classe
   i_c <- sample(nrow(X), k)
   
   # premiere matrice des centres de classe
   M_c <- as.matrix(X[i_c,])
+  
+  # choisir les points de depart
+  #coord <- locator(k)
+  #M_c <- matrix(c(coord$x, coord$y), ncol = 2)
   
   # initialisation de la matrice des distances
   M_d <- matrix(nrow = nrow(X), ncol = k)
@@ -106,34 +113,33 @@ my_nngraph <- function(X, similarity = "linear", neighbor = "seuil", sigma = 1/8
 my_spclust <- function(X, similarity = "linear", neighbor = "seuil", sigma = 1/8, deg = 3, theta = 0, knn = 3, k = 4, normalized = TRUE){
   # construction du graphe de voisinnage W_X
   W_X <- my_nngraph(X, similarity = similarity, neighbor = neighbor, sigma = sigma, deg = deg, theta = theta, knn = knn)
-  
+  print(W_X[1:6,1:6])
   # construction de la matrice des degres
   D_X <- matrix(0, nrow=nrow(W_X), ncol=nrow(W_X))
   diag(D_X) <- colSums(W_X)
-
+  print(D_X[1:6,1:6])
   # construction de la matrice laplacienne
   L_X <- D_X - W_X
-  
+  print(L_X[1:6,1:6])
   # construction de la matrice laplacienne normalisee
   if(normalized){
     diag(D_X) <- diag(D_X)**(-1/2)
     L_X <- D_X%*%L_X%*%D_X
   }
-  
-  #return(list(graphe = W_X, laplace = L_X))
+  print(L_X[1:6,1:6])
   # extraction des vecteurs propres
   F_X <- eigen(L_X, TRUE)$vectors[, (nrow(X)-k+1):nrow(X)]
-
+  print(F_X[1:6,])
   # normalisation des vecteurs propres
   if(normalized){
     for(i in (1:nrow(F_X))){
-      sum_row_i <- sum(F_X[i,])
+      sum_row_i <- max(as.matrix(F_X[i,]))
       for(j in (1:ncol(F_X))){
         F_X[i, j] <- F_X[i, j]/sum_row_i
       }
     }
   }
-
+  
   # application des kmeans
   partition <- my_kmeans(F_X, k = k)
 
@@ -143,37 +149,19 @@ my_spclust <- function(X, similarity = "linear", neighbor = "seuil", sigma = 1/8
 
 my_ari <- function (P0, P1) {
   # Matrice de confusion entre donnees observees et predites
-  MC <- table(P0, P1)[apply(table(P0, P1), 1, which.max),]
+  MC <- table(P0, P1)
   
-  # Calcul des constantes
-  ni <- 0
-  nj <- 0
-  nij <- 0
-  for (i in 1:nrow(MC)) {
-    ni <- ni + sum(choose(sum(MC[i,]),2))
-    nj <- nj + sum(choose(sum(MC[,i]),2))
-    for (j in 1:ncol(MC)) {
-      nij <- nij + sum(choose(MC[i,j],2))
-    }
-  }
-  
-  # Calcul ARI
-  n <- sum(MC)
-  numerateur <- nij - ((ni * nj) / choose(n,2))
-  denominateur <- (0.5 * (ni + nj)) - ((ni * nj) / choose(n,2))
-  ari <- numerateur/denominateur
-  
-  
-  ### apply
-  
+  # calcul des elements presents dans la formule
   N_ij <- sum(sapply(MC, choose, 2))
   N_i <- sum(sapply(apply(MC, 1, sum), choose, 2))
   N_j <- sum(sapply(apply(MC, 2, sum), choose, 2))
   N <- sum(MC)
   
+  # formule Adjusted Rand Index
   ARI <- (N_ij - ((N_i * N_j) / choose(N, 2)))/(0.5 * (N_i + N_j) - (N_i * N_j) / choose(N, 2))
+  
   # retour du resultat
-  return(list(boucle = ari, apply = ARI))
+  return(ARI)
 }
 
 # Tests
@@ -182,10 +170,15 @@ plot(D$x)
 test_kmeans <- my_kmeans(D$x, k = 4)
 plot(D$x, col=test_kmeans)
 
-test_sp <- my_spclust(D$x, k = 4, similarity = "gaussian", sigma = 1/8, neighbor = "connexe", normalized = TRUE)
+system.time(test_sp <- my_spclust(D$x, k = 4, similarity = "gaussian", sigma = 1/8, neighbor = "connexe", normalized = TRUE))
 plot(D$x, col=test_sp)
 
+system.time(test_sp_kernlab <- specc(D$x, centers = 4, kernel = "rbfdot", kpar = list(sigma = 32)))
+plot(D$x, col=test_sp_kernlab)
+
 my_ari(D$classes, test_sp)
+
+adjustedRandIndex(D$classes, test_sp)
 
 # data from mlbench
 
@@ -195,3 +188,29 @@ obj <- mlbench.spirals(100,1,0.025)
 plot(obj$x)
 test_sp_1 <- my_spclust(obj$x, k = 2, similarity = "gaussian", sigma = sqrt(1/2), neighbor = "knn", knn = 2)
 plot(obj$x, col=test_sp_1)
+
+
+
+# brouillon
+
+F_test <- matrix(c(1,2,3,4,5,6,7,8,9,10), nrow = 2, byrow = TRUE)
+F_test
+
+for(i in (1:nrow(F_test))){
+  sum_row_i <- max(F_test[i,])
+  for(j in (1:ncol(F_test))){
+    F_test[i, j] <- F_test[i, j]/sum_row_i
+  }
+}
+
+norm(as.matrix(F_test[1,]), type = "F")
+
+F_test
+
+x_ <- locator(4)
+
+x_$x
+x_m <- matrix(c(x_$x, x_$y), ncol=2)
+x_m
+
+
