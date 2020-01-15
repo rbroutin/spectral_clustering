@@ -1,8 +1,8 @@
-# Chargement des donnees
+## Chargement des donnees
 
 load("smiley.RData")
 
-# Fonctions
+## Fonctions
 
 dist_euclidienne <- function(x, y) {
   diff <- sum((x-y)**2)
@@ -164,53 +164,16 @@ my_ari <- function (P0, P1) {
   return(ARI)
 }
 
-# Tests
+## Tests
 
+# k-means
 plot(D$x)
 test_kmeans <- my_kmeans(D$x, k = 4)
 plot(D$x, col=test_kmeans)
 
-system.time(test_sp <- my_spclust(D$x, k = 4, similarity = "gaussian", sigma = 1/8, neighbor = "connexe", normalized = TRUE))
+# spectral clustering
+test_sp <- my_spclust(D$x, k = 4, similarity = "gaussian", sigma = 1/8, neighbor = "connexe", normalized = TRUE)
 plot(D$x, col=test_sp)
 
-system.time(test_sp_kernlab <- specc(D$x, centers = 4, kernel = "rbfdot", kpar = list(sigma = 32)))
-plot(D$x, col=test_sp_kernlab)
-
+# adjusted rand index
 my_ari(D$classes, test_sp)
-
-adjustedRandIndex(D$classes, test_sp)
-
-# data from mlbench
-
-library(mlbench)
-set.seed(111)
-obj <- mlbench.spirals(100,1,0.025)
-plot(obj$x)
-test_sp_1 <- my_spclust(obj$x, k = 2, similarity = "gaussian", sigma = sqrt(1/2), neighbor = "knn", knn = 2)
-plot(obj$x, col=test_sp_1)
-
-
-
-# brouillon
-
-F_test <- matrix(c(1,2,3,4,5,6,7,8,9,10), nrow = 2, byrow = TRUE)
-F_test
-
-for(i in (1:nrow(F_test))){
-  sum_row_i <- max(F_test[i,])
-  for(j in (1:ncol(F_test))){
-    F_test[i, j] <- F_test[i, j]/sum_row_i
-  }
-}
-
-norm(as.matrix(F_test[1,]), type = "F")
-
-F_test
-
-x_ <- locator(4)
-
-x_$x
-x_m <- matrix(c(x_$x, x_$y), ncol=2)
-x_m
-
-
